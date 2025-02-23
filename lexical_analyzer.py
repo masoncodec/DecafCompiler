@@ -206,7 +206,7 @@ def main():
             print()
         else:
             # Conditional formatting
-            formatted_token = f"{token:<12}" if len(token) < 12 else f"{token} "
+            formatted_token = f"{token:<12}" if len(token) < 12 else f"{token}"
             formatted_token_type = format_token_type(token=token, token_type=token_type)
             token_value = create_token_value(token=token, token_type=token_type)
             print(f"{formatted_token} line {line} cols {start_col}-{end_col} is {formatted_token_type}{token_value}")
