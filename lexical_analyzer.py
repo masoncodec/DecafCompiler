@@ -30,7 +30,7 @@ class ErrorTypes(Enum):
 
 # Define regex patterns for each token type
 token_patterns = [
-    (r'#.*|"[^"\n]*$', TokenType.UNKNOWN),
+    (r'#.*', TokenType.UNKNOWN),  # Comments
     (r'\b(?:' + '|'.join(RESERVED_WORDS) + r')\b', TokenType.KEYWORD), # Keywords
     (r'\b(true|false)\b', TokenType.BOOL),                             # Boolean Constant
     (r'\b[a-zA-Z][a-zA-Z0-9_]{0,30}\b', TokenType.IDENTIFIER),         # Identifiers
@@ -40,6 +40,7 @@ token_patterns = [
     (r'\d+', TokenType.INTEGER),                                       # Decimal integers
     (r'"[^"\n]*"', TokenType.STRING),                                  # String constants
     (r'<=|>=|==|!=|&&|\|\||[+\-*/%<>=!;,.(){}]', TokenType.OPERATOR),  # Operators and punctuation
+    (r'"[^"\n]*', TokenType.UNKNOWN),                                  # Unterminated strings
     (r'\S+', TokenType.UNKNOWN)                                        # Unknown tokens
 ]
 
@@ -118,7 +119,7 @@ def tokenize(input_string: str) -> List[Tuple[str, str, int, Tuple[int, int]]]:
                 
                 #add truncating variable thingy
                 if token_type == TokenType.UNKNOWN and token_length > 31:
-                    ident_pattern, ident_type = compiled_patterns[2]
+                    ident_pattern, ident_type = compiled_patterns[3]
                     extra_match = ident_pattern.match(token[:31])
                     if extra_match:
                         tokens.append((token, TokenType.TRUNCATED, line, (column, column + token_length - 1)))
