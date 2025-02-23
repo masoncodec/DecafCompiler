@@ -30,6 +30,7 @@ class ErrorTypes(Enum):
 
 # Define regex patterns for each token type
 token_patterns = [
+    (r'#.*|"[^"\n]*$', TokenType.UNKNOWN),
     (r'\b(?:' + '|'.join(RESERVED_WORDS) + r')\b', TokenType.KEYWORD), # Keywords
     (r'\b(true|false)\b', TokenType.BOOL),                             # Boolean Constant
     (r'\b[a-zA-Z][a-zA-Z0-9_]{0,30}\b', TokenType.IDENTIFIER),         # Identifiers
@@ -143,15 +144,15 @@ def format_token_type(token: str, token_type: Enum) -> str:
         if token == "<=":
             return "T_LessEqual"
         elif token == ">=":
-            return ""
+            return "T_GreaterEqual"
         elif token == "==":
-            return ""
+            return "T_Equal"
         elif token == "!=":
-            return ""
+            return "T_NotEqual"
         elif token == "&&":
-            return ""
+            return "T_And"
         elif token == "||":
-            return ""
+            return "T_Or"
         else:
             return f"\'{token}\'"
         
@@ -160,9 +161,81 @@ def format_token_type(token: str, token_type: Enum) -> str:
     
     return token_type.value
 
+def translate_to_number(s) -> str:
+    # Check if there is a '.' in the string
+    if '.' in s:
+        # Split into the part before and after the '.'
+        before_decimal, after_decimal = s.split('.', 1)
+        # Strip all leading zeros except one if there are any
+        if before_decimal.startswith('0'):
+            before_decimal = '0' + before_decimal.lstrip('0')
+        # Reconstruct the string
+        s = before_decimal + '.' + after_decimal
+    else:
+        # If there is no '.', strip all leading zeros
+        s = s.lstrip('0')
+        # If all characters were stripped and it's empty, keep at least one '0'
+        if not s:
+            s = '0'
+    
+    # Check if 'E' is in the string
+    if 'E' in s:
+        # Split the string into the number part and the exponent part
+        num_part, exp_part = s.split('E')
+        
+        # Remove any leading '+' in the exponent part
+        exp_part = exp_part.lstrip('+')
+        
+        # Convert the exponent to an integer
+        exponent = int(exp_part)
+        
+        # Handle the case where the number part ends with a dot
+        if num_part.endswith('.'):
+            num_part = num_part[:-1]
+        
+        # Split the number into integer and fractional parts
+        if '.' in num_part:
+            integer_part, fractional_part = num_part.split('.')
+        else:
+            integer_part, fractional_part = num_part, ''
+        
+        # Calculate the total number of digits to move the decimal point
+        total_digits = len(fractional_part)
+        
+        # Adjust the integer and fractional parts based on the exponent
+        if exponent > 0:
+            # Move the decimal point to the right
+            if exponent <= total_digits:
+                integer_part += fractional_part[:exponent]
+                fractional_part = fractional_part[exponent:]
+            else:
+                integer_part += fractional_part
+                fractional_part = ''
+                integer_part += '0' * (exponent - total_digits)
+        elif exponent < 0:
+            # Move the decimal point to the left
+            exponent = abs(exponent)
+            if exponent <= len(integer_part):
+                fractional_part = integer_part[-exponent:] + fractional_part
+                integer_part = integer_part[:-exponent]
+            else:
+                fractional_part = '0' * (exponent - len(integer_part)) + integer_part + fractional_part
+                integer_part = ''
+        
+        # Combine the integer and fractional parts
+        result = integer_part + fractional_part
+    
+    else:
+        # If there is no 'E', just return the stripped string
+        result = s
+    
+    return result
+
 def create_token_value(token: str, token_type: TokenType) -> str:   
     if token_type in [TokenType.BOOL, TokenType.INTEGER, 
                       TokenType.DOUBLE, TokenType.STRING]:
+        if token_type in [TokenType.INTEGER, TokenType.DOUBLE]:
+            token = translate_to_number(token)
         return f" (value = {token})"
     elif token_type == TokenType.TRUNCATED:
         return f" (truncated to {token[:31]})"
