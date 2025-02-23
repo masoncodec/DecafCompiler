@@ -20,7 +20,7 @@ class TokenType(Enum):
     STRING = "T_StringConstant"
     OPERATOR = "T_Operator"
     UNKNOWN = "T_Unknown"
-    TRUNCATED = "T_Identifier"
+    TRUNCATED = "T_Truncated"
 
 class ErrorTypes(Enum):
     ident_too_long = "Identifier too long"
@@ -118,7 +118,7 @@ def tokenize(input_string: str) -> List[Tuple[str, str, int, Tuple[int, int]]]:
                 #add truncating variable thingy
                 if token_type == TokenType.UNKNOWN and token_length > 31:
                     ident_pattern, ident_type = compiled_patterns[2]
-                    extra_match = ident_pattern.match(token[:32])
+                    extra_match = ident_pattern.match(token[:31])
                     if extra_match:
                         tokens.append((token, TokenType.TRUNCATED, line, (column, column + token_length - 1)))
 
@@ -135,7 +135,7 @@ def read_input_from_file(filename: str) -> str:
     with open(filename, "r") as file:
         return file.read()
 
-def format_token_type(token: str, token_type: str) -> str:
+def format_token_type(token: str, token_type: Enum) -> str:
     if token_type == TokenType.KEYWORD:
         return f"T_{token[0:1].capitalize()}{token[1:]}"
     
@@ -154,30 +154,33 @@ def format_token_type(token: str, token_type: str) -> str:
             return ""
         else:
             return f"\'{token}\'"
+        
+    if token_type == TokenType.TRUNCATED:
+        return TokenType.IDENTIFIER.value
     
-    return token_type
+    return token_type.value
 
-def create_token_value(token: str, token_type: str) -> str:
+def create_token_value(token: str, token_type: TokenType) -> str:   
     if token_type in [TokenType.BOOL, TokenType.INTEGER, 
                       TokenType.DOUBLE, TokenType.STRING]:
         return f" (value = {token})"
-    elif token_type is TokenType.TRUNCATED:
-        return f" (truncated to {token[:32]})"
+    elif token_type == TokenType.TRUNCATED:
+        return f" (truncated to {token[:31]})"
     
-    return ""
+    return " "
 
 def detect_error(token: str) -> str:
     for pattern, token_type in compiled_errors:
         match = pattern.match(token)
         if match:
             if token_type == ErrorTypes.invalid_directive:
-                return f"*** {token_type}"
+                return f"*** {token_type.value}"
             elif token_type == ErrorTypes.ident_too_long:
-                return f"*** {token_type}: \"{token}\""
+                return f"*** {token_type.value}: \"{token}\""
             elif token_type == ErrorTypes.unrecognized_char:
-                return f"*** {token_type}: \'{token}\'"
+                return f"*** {token_type.value}: \'{token}\'"
             else:
-                return f"*** {token_type}: {token}"
+                return f"*** {token_type.value}: {token}"
 
     return f"*** Unreconized error: {token}"
 
