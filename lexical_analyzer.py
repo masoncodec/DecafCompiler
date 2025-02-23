@@ -162,7 +162,14 @@ def format_token_type(token: str, token_type: Enum) -> str:
     
     return token_type.value
 
-def translate_to_number(s) -> str:
+def translate_to_number(s: str) -> str:
+    # Check if the string is a hexadecimal number (starts with '0x' or '0X')
+    if s.lower().startswith(('0x', '0X')):
+        # Convert the hexadecimal string to a decimal integer
+        decimal_value = int(s, 16)
+        # Convert the integer to a string
+        s = str(decimal_value)
+    
     # Check if there is a '.' in the string
     if '.' in s:
         # Split into the part before and after the '.'
@@ -231,6 +238,7 @@ def translate_to_number(s) -> str:
         result = s
     
     return result
+
 
 def create_token_value(token: str, token_type: TokenType) -> str:   
     if token_type in [TokenType.BOOL, TokenType.INTEGER, 
